@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import argparse
 import copy
 import fcntl
@@ -8,12 +7,13 @@ import os
 import shlex
 import subprocess
 import sys
-
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
+from contextlib import suppress
 from pathlib import Path
 
 import i3ipc
-
+from i3_quickterm.config import conf_path
+from i3_quickterm.config import read_conf
 
 __version__ = "1.1"
 
@@ -67,36 +67,6 @@ TERMS = {
     "xfce4-terminal": TERM("xfce4-terminal", execfmt="string"),
     "xterm": TERM("xterm"),
 }
-
-
-def conf_path():
-    locations = [
-        "i3-quickterm/config.json",
-        "i3/i3-quickterm.json",  # legacy location
-    ]
-    home_dir = os.environ["HOME"]
-    xdg_dir = os.environ.get("XDG_CONFIG_DIR", f"{home_dir}/.config")
-
-    for loc in locations:
-        full_loc = f"{xdg_dir}/{loc}"
-        if os.path.exists(full_loc):
-            return full_loc
-
-    return None
-
-
-def read_conf(fn):
-    if fn is None:
-        print("no config file! using defaults", file=sys.stderr)
-        return {}
-
-    try:
-        with open(fn, "r") as f:
-            c = json.load(f)
-        return c
-    except Exception as e:
-        print(f"invalid config file: {e}", file=sys.stderr)
-        return {}
 
 
 @contextmanager
@@ -225,13 +195,13 @@ def toggle_quickterm(conf, shell):
         qt_cmd = f"{sys.argv[0]} -i {shell}"
         if "_config" in conf:
             qt_cmd += f" -c {conf['_config']}"
-
         term_cmd = expand_command(
             term,
             title=quoted(term_title(shell)),
             expanded=qt_cmd,
             string=quoted(qt_cmd),
         )
+        print(term_cmd)
         os.execvp(term_cmd[0], term_cmd)
     else:
         qt = qt[0]
@@ -287,7 +257,3 @@ def main():
         launch_inplace(conf, args.shell)
     else:
         toggle_quickterm(conf, args.shell)
-
-
-if __name__ == "__main__":
-    main()
